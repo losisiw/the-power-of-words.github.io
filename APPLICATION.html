@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Power of Simple Words - PBL Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- CORE STYLES & COLORS --- */
+        :root {
+            --sky-blue: #87CEEB;
+            --bright-yellow: #FFD700;
+            --soft-green: #90EE90;
+            --dark-green: #32CD32;
+            --white: #FFFFFF;
+            --text-dark: #333333;
+            --wrong-red: #FF6B6B;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--sky-blue); /* Solid sky, no gradients */
+            overflow-x: hidden;
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- BACKGROUND SCENERY (No Gradients) --- */
+        .scenery {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 15vh;
+            background-color: var(--soft-green);
+            border-top: 10px solid var(--dark-green);
+        }
+
+        .cloud {
+            position: absolute;
+            background-color: var(--white);
+            border-radius: 50px;
+        }
+        .cloud::before, .cloud::after {
+            content: ''; position: absolute; background-color: var(--white); border-radius: 50%;
+        }
+        /* Cloud 1 */
+        .c1 { width: 120px; height: 40px; top: 10%; left: 10%; }
+        .c1::before { width: 60px; height: 60px; top: -30px; left: 15px; }
+        .c1::after { width: 50px; height: 50px; top: -20px; left: 60px; }
+        /* Cloud 2 */
+        .c2 { width: 150px; height: 50px; top: 20%; right: 15%; }
+        .c2::before { width: 70px; height: 70px; top: -40px; left: 20px; }
+        .c2::after { width: 60px; height: 60px; top: -25px; left: 75px; }
+
+        .tree {
+            position: absolute;
+            bottom: 15vh;
+        }
+        .tree-trunk {
+            width: 30px; height: 60px; background-color: #8B4513; margin: 0 auto;
+        }
+        .tree-leaves {
+            width: 100px; height: 100px; background-color: var(--dark-green);
+            border-radius: 50%; position: absolute; top: -80px; left: -35px;
+        }
+        .t1 { left: 5%; }
+        .t2 { right: 10%; }
+
+        /* --- GAME CONTAINER --- */
+        .game-container {
+            background-color: var(--white);
+            width: 90%;
+            max-width: 850px;
+            margin: 40px auto;
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 10px 0px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+        }
+
+        h1, h2 { color: var(--text-dark); margin-top: 0; }
+        h1 { font-size: 2.5rem; color: #1E90FF; }
+        h2 { font-size: 1.8rem; background-color: var(--bright-yellow); display: inline-block; padding: 10px 20px; border-radius: 20px; }
+
+        /* --- UI ELEMENTS --- */
+        .score-board {
+            position: absolute;
+            top: 20px; right: 20px;
+            background-color: var(--soft-green);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border: 3px solid var(--dark-green);
+            display: none;
+        }
+
+        .btn {
+            background-color: var(--bright-yellow);
+            color: var(--text-dark);
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 6px 0px #DAA520;
+            margin: 10px;
+        }
+        .btn:active { transform: translateY(6px); box-shadow: 0 0px 0px #DAA520; }
+        .btn:disabled { background-color: #e0e0e0; box-shadow: 0 6px 0px #bdbdbd; cursor: not-allowed; transform: none; }
+
+        .btn-option {
+            display: block;
+            width: 80%;
+            margin: 15px auto;
+            background-color: var(--sky-blue);
+            box-shadow: 0 6px 0px #5F9EA0;
+            color: var(--text-dark);
+        }
+        .btn-option:active { box-shadow: 0 0px 0px #5F9EA0; }
+
+        .question-box {
+            font-size: 1.5rem;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .icon { font-size: 2.5rem; }
+
+        /* --- BUILDER (CLICK-ONLY) --- */
+        .builder-area {
+            min-height: 80px;
+            background-color: #f8f9fa;
+            border: 4px dashed var(--sky-blue);
+            border-radius: 20px;
+            margin: 20px 0;
+            padding: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+        .available-area { background-color: transparent; border: none; }
+        
+        .chunk {
+            background-color: var(--soft-green);
+            border: 3px solid var(--dark-green);
+            padding: 12px 20px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            border-radius: 15px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s;
+        }
+        .chunk:active { transform: scale(0.95); }
+
+        /* --- UTILS --- */
+        .screen { display: none; }
+        .active-screen { display: block; }
+        .feedback { font-size: 1.4rem; font-weight: bold; margin: 15px 0; min-height: 35px; }
+        .correct { color: var(--dark-green); }
+        .incorrect { color: var(--wrong-red); }
+
+        .video-wrapper {
+            margin: 20px auto;
+            border: 5px solid var(--bright-yellow);
+            border-radius: 15px;
+            overflow: hidden;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scenery">
+        <div class="cloud c1"></div>
+        <div class="cloud c2"></div>
+        <div class="ground"></div>
+        <div class="tree t1"><div class="tree-trunk"></div><div class="tree-leaves"></div></div>
+        <div class="tree t2"><div class="tree-trunk"></div><div class="tree-leaves"></div></div>
+    </div>
+
+    <div class="game-container">
+        <div class="score-board" id="scoreBoard">Score: 0</div>
+
+        <div id="screen-start" class="screen active-screen">
+            <h1>🌟 The Power of Words 🌟</h1>
+            <p style="font-size: 1.2rem;">Welcome, Grade 8! Let's discover how words and structure create clear meaning.</p>
+            <p><strong>Step 1: Watch this video carefully!</strong></p>
+            <div class="video-wrapper">
+                <iframe width="100%" height="315" src="https://www.youtube.com/embed/jZjlX0R4TUM" title="TED-Ed Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <button class="btn" onclick="startGame()">I'm Ready to Play! 🚀</button>
+        </div>
+
+        <div id="screen-mcq" class="screen">
+            <h2 id="mcq-title">Level Title</h2>
+            <div class="question-box">
+                <span class="icon" id="mcq-icon">❓</span>
+                <span id="mcq-question">Question text here?</span>
+            </div>
+            <div id="mcq-options"></div>
+            <div class="feedback" id="mcq-feedback"></div>
+            <button class="btn" id="mcq-next-btn" style="display:none;" onclick="nextQuestion()">Next ➡️</button>
+        </div>
+
+        <div id="screen-builder" class="screen">
+            <h2 id="bld-title">Level Title</h2>
+            <p id="bld-instructions">Click the pieces to put them in the correct order!</p>
+            <div class="question-box">
+                <span class="icon" id="bld-icon">🧩</span>
+            </div>
+            
+            <div class="builder-area" id="bld-answer-box"></div>
+            
+            <div class="builder-area available-area" id="bld-available-box"></div>
+            
+            <div class="feedback" id="bld-feedback"></div>
+            <button class="btn" id="bld-check-btn" onclick="checkBuilder()">Check Answer ✅</button>
+            <button class="btn" id="bld-reset-btn" onclick="resetBuilder()" style="background-color: #ff9f43;">Reset 🔄</button>
+            <button class="btn" id="bld-next-btn" style="display:none;" onclick="nextQuestion()">Next ➡️</button>
+        </div>
+
+        <div id="screen-end" class="screen">
+            <h1>🎉 Mission Accomplished! 🎉</h1>
+            <h2 id="final-score-text" style="background-color: var(--soft-green);">Your Score: 0/22</h2>
+            <p class="feedback" id="final-message" style="color: var(--text-dark);"></p>
+            <div style="font-size: 4rem; margin: 20px;">🏆</div>
+            <button class="btn" onclick="location.reload()">Play Again 🔄</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- GAME DATA ---
+        const gameData = [
+            // LEVEL 1: Video Comprehension
+            { type: "mcq", level: "Level 1: Video Quiz 📺", icon: "💡", q: "What is the main advantage of using simple words?", options: ["They create clear meaning", "They make you sound highly academic", "They make paragraphs longer"], ans: 0 },
+            { type: "mcq", level: "Level 1: Video Quiz 📺", icon: "📝", q: "What does 'diction' refer to in writing?", options: ["The font size", "The specific choice of words", "The number of sentences"], ans: 1 },
+            { type: "mcq", level: "Level 1: Video Quiz 📺", icon: "🛑", q: "Why do overly complex words sometimes fail?", options: ["They are too short", "They are boring to read", "They create barriers to communication"], ans: 2 },
+
+            // LEVEL 2: Jumbled Words Challenge
+            { type: "build", level: "Level 2: Word Scramble 🧩", icon: "📖", inst: "Click the syllables to spell the word for 'word choice'.", chunks: ["tion", "dic"], correct: ["dic", "tion"] },
+            { type: "build", level: "Level 2: Word Scramble 🧩", icon: "👓", inst: "Click the syllables to spell the word for 'clearness'.", chunks: ["ri", "ty", "cla"], correct: ["cla", "ri", "ty"] },
+            { type: "build", level: "Level 2: Word Scramble 🧩", icon: "🌉", inst: "Spell the word for 'connecting words'.", chunks: ["si", "tran", "tion"], correct: ["tran", "si", "tion"] },
+            { type: "build", level: "Level 2: Word Scramble 🧩", icon: "🏗️", inst: "Spell the word for 'how a sentence is built'.", chunks: ["ture", "struc"], correct: ["struc", "ture"] },
+            { type: "build", level: "Level 2: Word Scramble 🧩", icon: "🧠", inst: "Spell the word for 'the message being shared'.", chunks: ["ing", "mean"], correct: ["mean", "ing"] },
+
+            // LEVEL 3: Transition Device Mission
+            { type: "mcq", level: "Level 3: Transitions 🌉", icon: "🌧️", q: "The weather was rainy; ____, we stayed inside.", options: ["therefore", "however", "for example"], ans: 0 },
+            { type: "mcq", level: "Level 3: Transitions 🌉", icon: "🍎", q: "I love healthy food. ____, I eat an apple every day.", options: ["In conclusion", "For example", "However"], ans: 1 },
+            { type: "mcq", level: "Level 3: Transitions 🌉", icon: "📝", q: "The test was very hard. ____, she passed with flying colors!", options: ["Therefore", "In addition", "However"], ans: 2 },
+            { type: "mcq", level: "Level 3: Transitions 🌉", icon: "🥪", q: "We packed sandwiches for the trip. ____, we brought plenty of water.", options: ["In addition", "However", "For example"], ans: 0 },
+
+            // LEVEL 4: Sentence Structure Builder (10 Questions strictly click-only)
+            { type: "build", level: "Level 4: Sentence Builder 🏗️", icon: "⚡", inst: "Click the chunks to make a clear sentence.", chunks: ["powerful.", "are", "words", "Simple"], correct: ["Simple", "words", "are", "powerful."] },
+            { type: "build", level: "Level 4: Sentence Builder 🏗️", icon: "🎯", inst: "Form the sentence about diction.", chunks: ["clear.", "diction", "makes", "Good", "meaning"], correct: ["Good", "diction", "makes", "meaning", "clear."] },
+            { type: "build", level: "Level 4: Sentence Builder 🏗️", icon: "🔗", inst: "How do transitions work?", chunks: ["together.", "ideas", "connect", "Transitions"], correct: ["Transitions", "connect", "ideas", "together."] },
+            { type: "build", level: "Level 4: Sentence Builder 🏗️", icon: "👀", inst: "Why do we need clear sentences?", chunks: ["reader.", "the", "sentences", "help", "Clear"], correct: ["Clear", "sentences", "help", "the", "reader."] },
+            { type: "build", level: "Level 4: Sentence Builder 🏗️", icon: "📊", inst: "What do informational texts do?", chunks: ["clearly.", "facts", "texts", "Informational", "share"], correct: ["Informational", "texts", "share", "facts", "clearly."] },
+            { type: "build", level: "Level 4: Sentence Builder 🏗️", icon: "✍️", inst: "How do writers choose words?", chunks: ["choose", "words", "purpose.", "with", "Writers"], correct: ["Writers", "choose", "words", "with", "purpose."] },
+            { type: "build", level: "Level 4: Sentence Builder 🏗️", icon: "😵", inst: "What happens with overly complex words?", chunks: ["Long", "people.", "can", "confuse", "words"], correct: ["Long", "words", "can", "confuse", "people."] },
+            { type: "build", level: "Level 4: Sentence Builder 🏗️", icon: "🗂️", inst: "Why is structure important?", chunks: ["organized.", "Structure", "writing", "keeps", "your"], correct: ["Structure", "keeps", "your", "writing", "organized."] },
+            { type: "build", level: "Level 4: Sentence Builder 🏗️", icon: "🗣️", inst: "What is communication?", chunks: ["Communication", "ideas.", "sharing", "is", "about"], correct: ["Communication", "is", "about", "sharing", "ideas."] },
+            { type: "build", level: "Level 4: Sentence Builder 🏗️", icon: "👥", inst: "The golden rule of writing:", chunks: ["audience.", "about", "think", "your", "Always"], correct: ["Always", "think", "about", "your", "audience."] }
+        ];
+
+        // --- GAME STATE ---
+        let currentIndex = 0;
+        let score = 0;
+        let currentAvailable = [];
+        let currentAnswer = [];
+
+        // --- FUNCTIONS ---
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById(id).classList.add('active-screen');
+        }
+
+        function startGame() {
+            document.getElementById('scoreBoard').style.display = 'block';
+            loadQuestion();
+        }
+
+        function updateScore() {
+            document.getElementById('scoreBoard').innerText = `Score: ${score}`;
+        }
+
+        function loadQuestion() {
+            if (currentIndex >= gameData.length) {
+                endGame();
+                return;
+            }
+
+            const q = gameData[currentIndex];
+
+            if (q.type === "mcq") {
+                showScreen('screen-mcq');
+                document.getElementById('mcq-title').innerText = q.level;
+                document.getElementById('mcq-icon').innerText = q.icon;
+                document.getElementById('mcq-question').innerText = q.q;
+                
+                const optsDiv = document.getElementById('mcq-options');
+                optsDiv.innerHTML = '';
+                q.options.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn btn-option';
+                    btn.innerText = opt;
+                    btn.onclick = () => checkMCQ(index, btn);
+                    optsDiv.appendChild(btn);
+                });
+
+                document.getElementById('mcq-feedback').innerText = '';
+                document.getElementById('mcq-next-btn').style.display = 'none';
+
+            } else if (q.type === "build") {
+                showScreen('screen-builder');
+                document.getElementById('bld-title').innerText = q.level;
+                document.getElementById('bld-icon').innerText = q.icon;
+                document.getElementById('bld-instructions').innerText = q.inst;
+                
+                // Initialize arrays
+                currentAvailable = [...q.chunks];
+                currentAnswer = [];
+                
+                document.getElementById('bld-feedback').innerText = '';
+                document.getElementById('bld-next-btn').style.display = 'none';
+                document.getElementById('bld-check-btn').style.display = 'inline-block';
+                document.getElementById('bld-reset-btn').style.display = 'inline-block';
+
+                renderBuilder();
+            }
+        }
+
+        // --- MCQ LOGIC ---
+        function checkMCQ(selectedIndex, btnElement) {
+            const q = gameData[currentIndex];
+            const buttons = document.querySelectorAll('.btn-option');
+            buttons.forEach(b => b.disabled = true); // Disable all
+
+            const feedback = document.getElementById('mcq-feedback');
+
+            if (selectedIndex === q.ans) {
+                btnElement.style.backgroundColor = 'var(--dark-green)';
+                btnElement.style.color = 'white';
+                feedback.innerText = "🌟 Correct! Great job!";
+                feedback.className = "feedback correct";
+                score++;
+            } else {
+                btnElement.style.backgroundColor = 'var(--wrong-red)';
+                btnElement.style.color = 'white';
+                buttons[q.ans].style.backgroundColor = 'var(--dark-green)';
+                buttons[q.ans].style.color = 'white';
+                feedback.innerText = "Oops! Look at the correct answer in green.";
+                feedback.className = "feedback incorrect";
+            }
+            
+            updateScore();
+            document.getElementById('mcq-next-btn').style.display = 'inline-block';
+        }
+
+        // --- BUILDER LOGIC ---
+        function renderBuilder() {
+            const ansBox = document.getElementById('bld-answer-box');
+            const availBox = document.getElementById('bld-available-box');
+            
+            ansBox.innerHTML = '';
+            availBox.innerHTML = '';
+
+            currentAnswer.forEach((text, i) => {
+                const chunk = document.createElement('div');
+                chunk.className = 'chunk';
+                chunk.innerText = text;
+                chunk.onclick = () => moveChunkToAvailable(i);
+                ansBox.appendChild(chunk);
+            });
+
+            currentAvailable.forEach((text, i) => {
+                const chunk = document.createElement('div');
+                chunk.className = 'chunk';
+                chunk.innerText = text;
+                chunk.onclick = () => moveChunkToAnswer(i);
+                availBox.appendChild(chunk);
+            });
+        }
+
+        function moveChunkToAnswer(index) {
+            currentAnswer.push(currentAvailable[index]);
+            currentAvailable.splice(index, 1);
+            renderBuilder();
+            document.getElementById('bld-feedback').innerText = ''; // clear error
+        }
+
+        function moveChunkToAvailable(index) {
+            currentAvailable.push(currentAnswer[index]);
+            currentAnswer.splice(index, 1);
+            renderBuilder();
+            document.getElementById('bld-feedback').innerText = '';
+        }
+
+        function resetBuilder() {
+            const q = gameData[currentIndex];
+            currentAvailable = [...q.chunks];
+            currentAnswer = [];
+            renderBuilder();
+            document.getElementById('bld-feedback').innerText = '';
+        }
+
+        function checkBuilder() {
+            const q = gameData[currentIndex];
+            const feedback = document.getElementById('bld-feedback');
+
+            if (currentAvailable.length > 0) {
+                feedback.innerText = "⚠️ Please use all the pieces!";
+                feedback.className = "feedback incorrect";
+                return;
+            }
+
+            let isCorrect = true;
+            for(let i = 0; i < currentAnswer.length; i++) {
+                if(currentAnswer[i] !== q.correct[i]) {
+                    isCorrect = false;
+                    break;
+                }
+            }
+
+            if (isCorrect) {
+                feedback.innerText = "🌟 Excellent! Perfect structure!";
+                feedback.className = "feedback correct";
+                score++;
+                updateScore();
+                
+                // Hide controls, show next
+                document.getElementById('bld-check-btn').style.display = 'none';
+                document.getElementById('bld-reset-btn').style.display = 'none';
+                document.getElementById('bld-next-btn').style.display = 'inline-block';
+                
+                // Disable clicking on correct answers
+                document.querySelectorAll('#bld-answer-box .chunk').forEach(c => c.onclick = null);
+            } else {
+                feedback.innerText = "❌ Not quite right. Hit Reset and try again!";
+                feedback.className = "feedback incorrect";
+            }
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            loadQuestion();
+        }
+
+        function endGame() {
+            showScreen('screen-end');
+            document.getElementById('scoreBoard').style.display = 'none';
+            document.getElementById('final-score-text').innerText = `Your Score: ${score} / ${gameData.length}`;
+            
+            const msgEl = document.getElementById('final-message');
+            if (score === gameData.length) {
+                msgEl.innerText = "Excellent! You mastered clarity and structure! 🥇";
+            } else if (score >= gameData.length * 0.7) {
+                msgEl.innerText = "Good job! Keep improving your word power! 👍";
+            } else {
+                msgEl.innerText = "Almost there! Try again and sharpen your skills! 💪";
+            }
+        }
+    </script>
+</body>
+</html>
